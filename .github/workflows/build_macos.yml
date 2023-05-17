@@ -1,0 +1,104 @@
+name: build macos
+
+on:
+  workflow_call:
+    inputs:
+      boost:
+        type: boolean
+        description: "Whether to use Boost or not"
+        required: true
+        default: true
+      boost_version:
+        type: string
+        description: "The Boost version to use"
+        required: true
+        default: "1.81.0"
+
+jobs:
+  macos-12:
+    strategy:
+      max-parallel: 1
+      matrix:
+        platform_version: [12]
+        toolset: [clang]
+        link: [static+shared]
+        arch: [aarch64]
+
+    runs-on: macos-12
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Download and install Boost
+        if: ${{ inputs.boost == true }}
+        uses: MarkusJx/install-boost@v2.4.4
+        id: download_boost
+        with:
+          boost_version: ${{ inputs.boost_version }}
+          platform_version: ${{ matrix.platform_version }}
+          toolset: ${{ matrix.toolset }}
+          link: ${{ matrix.link }}
+
+      - name: move Boost
+        if: ${{ inputs.boost == true }}
+        run: |
+          sudo mv ${{ steps.download_boost.outputs.BOOST_ROOT }}/include/boost /usr/local/include
+          sudo mv ${{ steps.download_boost.outputs.BOOST_ROOT }}/lib/*.dylib /usr/local/lib
+
+      - name: Setup Python3
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.11
+
+      - name: Meson build
+        uses: BSFishy/meson-build@v1.0.3
+        with:
+          action: build
+          directory: build
+          meson-version: 1.1.0
+
+      - uses: actions/cache@v3
+        with:
+          path: build
+          key: build-macos
+
+  macos-11:
+    strategy:
+      max-parallel: 1
+      matrix:
+        platform_version: [11]
+        toolset: [clang]
+        link: [static+shared]
+        arch: [aarch64]
+
+    runs-on: macos-11
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Download and install Boost
+        if: ${{ inputs.boost == true }}
+        uses: MarkusJx/install-boost@v2.4.4
+        id: download_boost
+        with:
+          boost_version: ${{ inputs.boost_version }}
+          platform_version: ${{ matrix.platform_version }}
+          toolset: ${{ matrix.toolset }}
+          link: ${{ matrix.link }}
+
+      - name: move Boost
+        if: ${{ inputs.boost == true }}
+        run: |
+          sudo mv ${{ steps.download_boost.outputs.BOOST_ROOT }}/include/boost /usr/local/include
+          sudo mv ${{ steps.download_boost.outputs.BOOST_ROOT }}/lib/*.dylib /usr/local/lib
+
+      - name: Setup Python3
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.11
+
+      - name: Meson build
+        uses: BSFishy/meson-build@v1.0.3
+        with:
+          action: build
+          meson-version: 1.1.0
